@@ -1,0 +1,63 @@
+
+services:
+  backend:
+    container_name: school-sync-backend
+    build:
+      context: ./school-sync-backend
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: db          # <-- CORREGIDO
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: 321
+      DB_DATABASE: schoolsyn-database   
+      NODE_ENV: development
+      AUTH0_ISSUER_URL: https://thebigmou.us.auth0.com/ 
+      AUTH0_AUDIENCE: https://thebigmou.us.auth0.com/api/v2/
+    volumes:
+      - ./school-sync-backend:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: 
+      - schoolsync-net 
+
+  frontend:
+    build:
+      context: ./SchoolSync
+      dockerfile: Dockerfile
+    container_name: school_sync_frontend
+    ports:
+      - "8080:80"
+    networks:
+      - schoolsync-net
+    depends_on: 
+      - backend
+
+  db:
+    image: postgres:15-alpine
+    container_name: school_sync_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 321              
+      POSTGRES_DB: schoolsyn-database   
+    ports:
+      - "5433:5432" 
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - schoolsync-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d schoolsyn-database"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  schoolsync-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
