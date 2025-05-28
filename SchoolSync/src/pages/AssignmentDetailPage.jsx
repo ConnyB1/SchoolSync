@@ -1,4 +1,3 @@
-// proyecto/SchoolSync/src/pages/AssignmentDetailPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -21,15 +20,14 @@ const AssignmentDetailPage = () => {
   const [submissionSuccess, setSubmissionSuccess] = useState(null);
 
   const isTeacherOfClass = user && assignment && assignment.teacher?.id === user?.id;
-  // TODO: Implementar lógica para verificar si el usuario es estudiante matriculado en esta clase
-  const isStudentOfClass = user && assignment && !isTeacherOfClass; // Simplificado por ahora, se debería verificar la matrícula real
+  const isStudentOfClass = user && assignment && !isTeacherOfClass;
 
   useEffect(() => {
     const fetchAssignment = async () => {
       setLoadingAssignment(true);
       setAssignmentError(null);
       try {
-        const response = await fetch(`${API_URL}/assignments/${assignmentId}/class/${classId}`, {
+        const response = await fetch(`${API_URL}/assignments/${assignmentId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -73,19 +71,11 @@ const AssignmentDetailPage = () => {
     const formData = new FormData();
     formData.append('file', submissionFile);
     formData.append('message', submissionMessage);
-    // TODO: En un sistema real, aquí enviarías también el assignmentId y classId,
-    // pero el backend debería manejar la ruta.
-    // Asumimos un endpoint para submissions o que el assignmentId ya va en la URL.
-
     try {
-      // FIXED: Este endpoint es un placeholder. Deberás crear un endpoint en el backend
-      // para la subida de tareas por parte del alumno.
-      // Podría ser algo como PATCH /api/assignments/:assignmentId/submit
       const response = await fetch(`${API_URL}/assignments/${assignment.id}/submit`, { // Endpoint de ejemplo
-        method: 'POST', // O PATCH si es para actualizar
+        method: 'POST', 
         headers: {
           'Authorization': `Bearer ${token}`,
-          // 'Content-Type': 'multipart/form-data' lo maneja automáticamente FormData
         },
         body: formData,
       });
@@ -98,8 +88,6 @@ const AssignmentDetailPage = () => {
       setSubmissionSuccess('Tarea enviada exitosamente.');
       setSubmissionFile(null);
       setSubmissionMessage('');
-      // Opcional: Re-fetch the assignment to show submission status
-      // fetchAssignment(); 
     } catch (err) {
       setSubmissionError(err.message);
     } finally {
@@ -118,24 +106,24 @@ const AssignmentDetailPage = () => {
         <div className="mb-6">
           <button
             onClick={() => navigate(`/clases/${classId}`)}
-            className="mb-4 px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+            className="mb-4 px-4 py-2 bg-gray-200 text-white rounded-md hover:bg-gray-300"
           >
             &larr; Volver a la Clase
           </button>
-          <h1 className="text-3xl font-bold text-gray-800">{assignment.title}</h1>
-          <p className="text-gray-600 mt-2">{assignment.description}</p>
-          <p className="text-sm text-gray-500 mt-2">Fecha de Entrega: {new Date(assignment.dueDate).toLocaleDateString()}</p>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-7xl font-bold text-gray-800">{assignment.title}</h1>
+          <p className="text-3xl text-gray-600 mt-2">{assignment.description}</p>
+          <p className="text-2xl  text-gray-500 mt-2">Fecha de Entrega: {new Date(assignment.dueDate).toLocaleDateString()}</p>
+          <p className="text-2xl text-gray-500">
             Publicado por: {assignment.teacher?.firstName} {assignment.teacher?.lastName}
           </p>
           {assignment.assignmentFileUrl && (
             <div className="mt-4">
-              <h3 className="font-semibold text-gray-700">Archivo Adjunto:</h3>
+              <h3 className="font-semibold text-lg text-gray-700">Archivo Adjunto:</h3>
               <a 
-                href={assignment.assignmentFileUrl} // Asegúrate de que esta URL sea accesible desde el frontend
+                href={assignment.assignmentFileUrl} 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="text-blue-600 hover:underline"
+                className="text-blue-600 text-lg hover:underline"
               >
                 Descargar {assignment.assignmentFileUrl.split('/').pop()}
               </a>
@@ -145,7 +133,7 @@ const AssignmentDetailPage = () => {
 
         {isStudentOfClass && (
           <div className="bg-gray-50 p-6 rounded-lg shadow-inner">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Subir/Modificar Entrega</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Subir/Modificar Entrega</h2>
             <form onSubmit={handleSubmitAssignment} className="space-y-4">
               <div>
                 <label htmlFor="submissionFile" className="block text-sm font-medium text-gray-700">
@@ -155,28 +143,28 @@ const AssignmentDetailPage = () => {
                   type="file"
                   id="submissionFile"
                   onChange={handleFileChange}
-                  className="mt-1 block w-full text-sm text-gray-900 border border-gray-300 rounded-md cursor-pointer bg-gray-50 focus:outline-none"
+                  className="text-lg mt-1 block w-full  text-gray-900 border border-gray-300 rounded-md cursor-pointer bg-gray-50 focus:outline-none"
                   required
                 />
                 {submissionFile && <p className="mt-2 text-sm text-gray-500">Archivo seleccionado: {submissionFile.name}</p>}
               </div>
               <div>
-                <label htmlFor="submissionMessage" className="block text-sm font-medium text-gray-700">
-                  Mensaje (Opcional)
+                <label htmlFor="submissionMessage" className="text-lg block font-medium text-gray-700">
+                  Mensaje
                 </label>
                 <textarea
                   id="submissionMessage"
                   rows="3"
                   value={submissionMessage}
                   onChange={(e) => setSubmissionMessage(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                  className="text-lg mt-1 block w-full px-3 py-2 border text-gray-700 border-gray-300 rounded-md shadow-sm"
                 ></textarea>
               </div>
               {submissionError && <p className="text-red-500 text-sm">{submissionError}</p>}
               {submissionSuccess && <p className="text-green-600 text-sm">{submissionSuccess}</p>}
               <button
                 type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                className="px-4 py-2 text-lg bg-indigo-600 text-white font-medium rounded-md hover:bg-indigo-700 disabled:opacity-50"
                 disabled={loadingSubmission}
               >
                 {loadingSubmission ? 'Subiendo...' : 'Enviar Tarea'}
@@ -185,12 +173,10 @@ const AssignmentDetailPage = () => {
           </div>
         )}
 
-        {/* TODO: Lógica para el profesor para revisar/calificar entregas */}
         {isTeacherOfClass && (
           <div className="bg-gray-50 p-6 rounded-lg shadow-inner mt-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Entregas de Alumnos</h2>
             <p className="text-gray-600">Aquí se mostrarán las entregas de los alumnos y las opciones para calificar.</p>
-            {/* Implementar la carga y visualización de las entregas */}
           </div>
         )}
       </main>

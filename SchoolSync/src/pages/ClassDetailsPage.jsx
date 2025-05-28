@@ -1,4 +1,4 @@
-// proyecto/SchoolSync/src/pages/ClassDetailsPage.jsx
+// proyecto/SchoolSync/src/pages/ClassDetailsPage.jsx (SIN CAMBIOS)
 import React, { useEffect, useState, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -7,8 +7,32 @@ import Sidebar from './sidebar';
 import ClassAnnouncements from './ClassAnnouncements';
 import ClassAssignments from './ClassAssignments';
 import ClassPeople from './ClassPeople';
+import {Tabs, Tab, Card, CardBody} from "@heroui/react";
 
 
+const classTabs = [
+  {
+    id: "anuncios",
+    label: "Anuncios",
+    content: (classId, isTeacherOfClass) => (
+      <ClassAnnouncements classId={classId} isTeacher={isTeacherOfClass} />
+    ),
+  },
+  {
+    id: "tareas",
+    label: "Tareas",
+    content: (classId, isTeacherOfClass) => (
+      <ClassAssignments classId={classId} isTeacher={isTeacherOfClass} />
+    ),
+  },
+  {
+    id: "personas",
+    label: "Personas",
+    content: (classId) => (
+      <ClassPeople classId={classId} />
+    ),
+  },
+];
 function ClassDetailsPage() {
   const { classId } = useParams();
   const { token, user } = useContext(AuthContext);
@@ -50,10 +74,10 @@ function ClassDetailsPage() {
   }, [classId, token]);
 
   const isTeacherOfClass = user && classDetails && classDetails.teacher?.id === user?.id;
-  // FIXED: Acceder a enrollment.user?.id para verificar si el usuario está matriculado
+  // Acceder a enrollment.user?.id para verificar si el usuario está matriculado
   const isStudentOfClass = user && classDetails && classDetails.studentEnrollments
-    ?.filter(Boolean) // Asegura que no haya entradas nulas/indefinidas
-    .some(enrollment => enrollment.user?.id === user?.id); // Usar enrollment.user?.id
+    ?.filter(Boolean)
+    .some(enrollment => enrollment.user?.id === user?.id);
 
   const canManageClass = isTeacherOfClass || user?.roles.includes('Administrador'); 
 
@@ -69,7 +93,7 @@ function ClassDetailsPage() {
       <main className="flex-1 p-8 bg-white shadow-md rounded-lg mx-4 my-4 overflow-y-auto">
         {
           <>
-            <div className="bg-blue-600 text-white p-6 rounded-lg shadow-md mb-6">
+            <div className="dark:bg-gray-800 text-white p-6 rounded-lg shadow-md mb-6">
               <h1 className="text-3xl font-bold">{classDetails.name}</h1>
               <p className="text-lg">{classDetails.description || 'Sin descripción.'}</p>
               {classDetails.teacher && (
@@ -79,33 +103,26 @@ function ClassDetailsPage() {
             </div>
 
             <div className="mb-6 border-b border-gray-300">
-              <nav className="flex space-x-4">
-                <button
-                  onClick={() => setActiveTab('anuncios')}
-                  className={`py-2 px-4 font-medium ${activeTab === 'anuncios' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                  Anuncios
-                </button>
-                <button
-                  onClick={() => setActiveTab('tareas')}
-                  className={`py-2 px-4 font-medium ${activeTab === 'tareas' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                  Tareas
-                </button>
-                <button
-                  onClick={() => setActiveTab('personas')}
-                  className={`py-2 px-4 font-medium ${activeTab === 'personas' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                  Personas
-                </button>
-              </nav>
+              <Tabs
+                aria-label="Tabs de clase"
+                selectedKey={activeTab}
+                onSelectionChange={setActiveTab}
+                items={classTabs}
+              >
+                {(item) => (
+                  <Tab key={item.id} title={item.label}>
+                    <Card>
+                      <CardBody>
+                        {item.id === "personas"
+                          ? item.content(classId)
+                          : item.content(classId, isTeacherOfClass)}
+                      </CardBody>
+                    </Card>
+                  </Tab>
+                )}
+              </Tabs>
             </div>
-
-            <div>
-              {activeTab === 'anuncios' && <ClassAnnouncements classId={classId} isTeacher={isTeacherOfClass} />}
-              {activeTab === 'tareas' && <ClassAssignments classId={classId} isTeacher={isTeacherOfClass} />}
-              {activeTab === 'personas' && <ClassPeople classId={classId} />}
-            </div>
+          
           </>
         }
       </main>

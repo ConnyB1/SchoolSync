@@ -15,12 +15,11 @@ services:
       NODE_ENV: production # Considera cambiar a 'development' para desarrollo si es necesario
       PORT: 3000
       JWT_SECRET: a9371c91e647f736c15abd56326c8fd97b9a7699eb20e488cc9b7c2337f9d6bb13959d75f3ae1c60812f2b5d0eca0874c5decab69b6f73e3ea41d5ce20c340cbb0fd00f2106638bad8b0ad4af6c71928aa887d2536877c57c22028f27d874c2d7148376d929679e284159f123a714b7fca649c3ef409f33360225221c4a02ff1 # Considera mover secrets a un archivo .env y no versionarlos
-      SENDGRID_API_KEY: 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 # Considera mover secrets a un archivo .env
+      SENDGRID_API_KEY: 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 # <--- ¡PEGA LA CLAVE CORRECTA Y ACTIVA AQUÍ!
       SENDGRID_VERIFIED_SENDER: schoolsync.real@gmail.com
+      FRONTEND_URL: http://localhost:8080 # URL que el backend usa para CORS, etc.
     volumes:
-      - ./school-sync-backend:/app
-      - /app/node_modules 
-      - /app/dist
+      - ./school-sync-backend:/app # Considera las implicaciones de este volumen en producción (puede ser mejor construir todo en la imagen)
     depends_on:
       db:
         condition: service_healthy
@@ -29,31 +28,35 @@ services:
 
   frontend:
     build:
-      context: ./SchoolSync
+      context: ./SchoolSync # Ruta a la carpeta de tu frontend
       dockerfile: Dockerfile
+      args:
+        # Esta es la URL que el NAVEGADOR usará para acceder al backend.
+        # Se pasa como argumento de build al Dockerfile del frontend.
+        VITE_BACKEND_URL: http://localhost:3000/api 
     container_name: school_sync_frontend
     ports:
-      - "8080:80"
+      - "8080:80" # El frontend se sirve en el puerto 80 dentro del contenedor, mapeado al 8080 en el host
     networks:
       - schoolsync-net
     depends_on: 
       - backend
-    environment:
-      - VITE_BACKEND_URL=http://localhost:3000
+    # Las variables de entorno en tiempo de ejecución no son necesarias aquí si VITE_BACKEND_URL se inyecta en el build.
+    # Si tuvieras otras variables de entorno que Nginx o algún script de entrada necesite en tiempo de ejecución, las pondrías aquí.
 
   db:
     image: postgres:15-alpine
     container_name: school_sync_db
     environment:
-      POSTGRES_USER: postgres         # <--- AÑADIDO (coincide con DB_USERNAME del backend)
-      POSTGRES_PASSWORD: 321          # <--- AÑADIDO (coincide con DB_PASSWORD del backend)
-      POSTGRES_DB: schoolsyn-database # <--- AÑADIDO (coincide con DB_NAME del backend)
+      POSTGRES_USER: postgres         
+      POSTGRES_PASSWORD: 321          
+      POSTGRES_DB: schoolsyn-database 
     networks:
       - schoolsync-net
     volumes:
-      - postgres_data:/var/lib/postgresql/data # <--- AÑADIDO para persistir datos
+      - postgres_data:/var/lib/postgresql/data 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d schoolsyn-database"] # Ahora 'postgres' es el usuario correcto aquí
+      test: ["CMD-SHELL", "pg_isready -U postgres -d schoolsyn-database"] 
       interval: 5s
       timeout: 5s
       retries: 5
@@ -63,4 +66,4 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data: # Definición del volumen nombrado
+  postgres_data:

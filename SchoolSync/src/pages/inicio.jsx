@@ -1,25 +1,22 @@
+// proyecto/SchoolSync/src/pages/inicio.jsx
 import React, { useState, useEffect } from 'react';
-import Sidebar from './sidebar';
-// import { useAuth0 } from '@auth0/auth0-react'; // Ya no se usa Auth0 aquí
-import { useAuth } from '../context/AuthContext'; // Usa tu AuthContext
+import Sidebar from './sidebar'; 
+import { useAuth } from '../context/AuthContext'; 
+import AnnouncementCard from '../components/anuncios'; 
 
 const Inicio = () => {
   const [announcements, setAnnouncements] = useState([]);
-  const [loadingAnnouncements, setLoadingAnnouncements] = useState(true); // Renombrado para claridad
+  const [loadingAnnouncements, setLoadingAnnouncements] = useState(true);
   const [error, setError] = useState(null);
-  // const { getAccessTokenSilently, isAuthenticated, isLoading: authLoading } = useAuth0(); // Ya no se usa Auth0
-  const { token, isAuthenticated, isLoading: authLoading } = useAuth(); // Usa tu AuthContext
-
-  // API_BASE_URL debería venir de una variable de entorno o configuración,
-  // pero tu AuthContext ya usa una. Considera centralizar esto.
+  const { token, isAuthenticated, isLoading: authLoading } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
   useEffect(() => {
-    if (authLoading) { // isLoading de tu AuthContext
+    if (authLoading) {
       return; 
     }
 
-    if (!isAuthenticated) { // isAuthenticated de tu AuthContext
+    if (!isAuthenticated) {
       setLoadingAnnouncements(false);
       setAnnouncements([]);
       return;
@@ -29,14 +26,22 @@ const Inicio = () => {
       setLoadingAnnouncements(true);
       setError(null);
       try {
-        // const token = await getAccessTokenSilently(); // No es necesario si tienes el token de tu AuthContext
-        if (!token) { // Verifica que el token exista
+        if (!token) {
             throw new Error("Token de autenticación no encontrado.");
         }
-        const response = await fetch(`${API_BASE_URL}/api/announcements`, { // Añadido /api
+        let fetchUrl;
+        if (API_BASE_URL.endsWith('/api')) {
+          fetchUrl = `${API_BASE_URL}/announcements`;
+        } else {
+          fetchUrl = `${API_BASE_URL}/api/announcements`;
+        }
+        
+        console.log("Fetching announcements from URL:", fetchUrl);
+
+        const response = await fetch(fetchUrl, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${token}`, // Usa el token de tu AuthContext
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
@@ -66,15 +71,11 @@ const Inicio = () => {
       }
     };
 
-    if (isAuthenticated && token) { // Asegúrate que el token también esté presente
+    if (isAuthenticated && token) {
         fetchAnnouncements();
     }
-  // API_BASE_URL no necesita estar en las dependencias si no cambia.
-  // }, [isAuthenticated, getAccessTokenSilently, authLoading, API_BASE_URL]); 
-  }, [isAuthenticated, token, authLoading]); // Dependencias actualizadas
+  }, [isAuthenticated, token, authLoading, API_BASE_URL]);
 
-  // La lógica de renderizado condicional (authLoading, !isAuthenticated, loadingAnnouncements) permanece similar
-  // pero ahora usa las variables de tu AuthContext.
   if (authLoading) {
     return (
       <div className="flex min-h-screen w-full bg-gray-100 h-full">
@@ -91,14 +92,17 @@ const Inicio = () => {
       <div className="flex min-h-screen w-full bg-gray-100 h-full">
         <Sidebar />
         <div className="flex-1 max-w-5xl mx-auto p-5 text-center">
-          {/* Podrías redirigir a login aquí o mostrar un mensaje */}
           <p>Por favor, inicia sesión para ver los anuncios.</p>
         </div>
       </div>
     );
   }
 
-  if (loadingAnnouncements) { // Usar la variable renombrada
+  // No mostramos "Cargando anuncios..." si no hay autenticación o token,
+  // ya que la carga ni siquiera comenzará.
+  // El return de arriba ya maneja !isAuthenticated.
+  // Solo mostramos "Cargando anuncios..." si estamos autenticados y el token existe.
+  if (isAuthenticated && token && loadingAnnouncements) { 
     return (
       <div className="flex min-h-screen w-full bg-gray-100 h-full">
         <Sidebar />
@@ -110,42 +114,49 @@ const Inicio = () => {
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-gray-100 h-full">
+    <div className="flex min-h-screen w-full bg-gray-100"> {/* Quitamos h-full aquí para que el contenido determine la altura */}
       <Sidebar />
-      <div className="flex-1 max-w-5xl mx-auto p-5 overflow-y-auto">
-        <header className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800">Anuncios</h2>
+
+      <main className="flex-1 p-8">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8"> 
+          <h1 className="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">Anuncios</h1>
         </header>
+        <div className="flex-1 max-w-5xl mx-auto p-5 flex flex-col overflow-hidden"> {/* Se añade overflow-hidden para contener el scroll del hijo */}
 
-        {error && <p className="text-red-500">Error al cargar anuncios: {error}</p>}
-
-        {!loadingAnnouncements && !error && announcements.length === 0 && (
-          <div className="text-center py-10">
-            <p className="text-gray-600">No hay anuncios disponibles en este momento.</p>
-          </div>
-        )}
-
-        {!loadingAnnouncements && !error && announcements.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {announcements.map((announcement) => (
-              <div key={announcement.id} className="bg-white rounded-md shadow-md overflow-hidden">
-                {announcement.imageUrl && (
-                  <img src={announcement.imageUrl} alt={announcement.title} className="w-full h-32 object-cover" />
-                )}
-                <div className="p-4">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">{announcement.title}</h3>
-                  <p className="text-gray-600 text-sm">{announcement.content}</p>
-                  <button className="text-indigo-500 text-sm mt-2 hover:underline">Leer más</button>
-                </div>
+          {/* Contenedor para el estado de error y sin anuncios */}
+          <div className="flex-shrink-0">
+            {error && <p className="text-red-500">Error al cargar anuncios: {error}</p>}
+            {!loadingAnnouncements && !error && announcements.length === 0 && (
+              <div className="text-center py-10">
+                <p className="text-gray-600">No hay anuncios disponibles en este momento.</p>
               </div>
-            ))}
+            )}
           </div>
-        )}
 
-        <footer className="border-t border-gray-200 py-8 text-center text-gray-600 mt-auto">
-          <p>© 2025 Schoolsync</p>
-        </footer>
-      </div>
+          {/* CAMBIO: Contenedor de la lista de anuncios con scroll */}
+          {/* flex-grow para que ocupe el espacio disponible, overflow-y-auto para el scroll vertical */}
+          <div className="flex-auto overflow-y-auto custom-scrollbar"> {/* custom-scrollbar si quieres estilos personalizados de scroll */}
+            {!loadingAnnouncements && !error && announcements.length > 0 && (
+              // CAMBIO: De grid a flex flex-col para una lista vertical de tarjetas a ancho completo
+              // pb-6 para padding al final de la lista scrolleable
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12 pb-6"> 
+                {announcements.map((announcement) => (
+                  <AnnouncementCard
+                    key={announcement.id} 
+                    title={announcement.title}
+                    description={announcement.content} 
+                    // Las props buttonText y onButtonClick ya no se pasan
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <footer className="border-t border-gray-200 py-8 text-center text-gray-600 mt-auto flex-shrink-0"> {/* flex-shrink-0 para que no se encoja */}
+            <p>© 2025 Schoolsync</p>
+          </footer>
+        </div>
+      </main>
     </div>
   );
 };

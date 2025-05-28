@@ -83,7 +83,7 @@ const ClassAnnouncements = ({ classId, isTeacher }) => {
               <input
                 type="text"
                 id="announcementTitle"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 text-gray-800 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 value={newAnnouncementTitle}
                 onChange={(e) => setNewAnnouncementTitle(e.target.value)}
                 required
@@ -94,7 +94,7 @@ const ClassAnnouncements = ({ classId, isTeacher }) => {
               <textarea
                 id="announcementContent"
                 rows="3"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 text-gray-800 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 value={newAnnouncementContent}
                 onChange={(e) => setNewAnnouncementContent(e.target.value)}
                 required
@@ -123,7 +123,6 @@ const ClassAnnouncements = ({ classId, isTeacher }) => {
           <div key={announcement.id} className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-bold text-gray-900">{announcement.title}</h3>
             <p className="text-gray-700 mt-2">{announcement.content}</p>
-            {/* FIXED: Cambiado de sender a author y timestamp a createdAt */}
             <p className="text-sm text-gray-500 mt-2">Publicado por {announcement.author?.firstName || 'Desconocido'} el {new Date(announcement.createdAt).toLocaleDateString()}</p>
           </div>
         ))}

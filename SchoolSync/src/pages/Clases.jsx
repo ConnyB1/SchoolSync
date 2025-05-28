@@ -9,7 +9,7 @@ import { PlusIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline'; // Impo
 
 // --- Componente ClassCard (Defined locally) ---
 const ClassCard = ({ name, teacherName, studentCount, accessCode, userRole }) => (
-  <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+  <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-opacity">
     <h3 className="text-xl font-semibold text-gray-800 mb-2">{name}</h3>
     <p className="text-gray-600 mb-1">Profesor: {teacherName || 'N/A'}</p>
     <p className="text-gray-600 mb-3">Estudiantes: {studentCount || 0}</p>
@@ -48,13 +48,13 @@ const CreateClassForm = ({ onSubmit, onClose, isLoading }) => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej: Matemáticas Avanzadas"
-              className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-800"
               required
             />
           </div>
           <div className="mb-6">
             <label htmlFor="classDescription" className="block text-sm font-medium text-gray-700 mb-1">
-              Descripción (Opcional)
+              Descripción
             </label>
             <textarea
               id="classDescription"
@@ -62,7 +62,7 @@ const CreateClassForm = ({ onSubmit, onClose, isLoading }) => {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Ej: Curso enfocado en cálculo integral y álgebra lineal..."
               rows="3"
-              className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-800" 
               required
             />
           </div>
@@ -71,7 +71,7 @@ const CreateClassForm = ({ onSubmit, onClose, isLoading }) => {
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 text-white"
             >
               Cancelar
             </button>
@@ -119,7 +119,7 @@ const JoinClassForm = ({ onSubmit, onClose, isLoading }) => {
               value={accessCode}
               onChange={(e) => setAccessCode(e.target.value)}
               placeholder="Ingresa el código de la clase"
-              className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
+              className="w-full p-3 border border-gray-300 text-black rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
               required
             />
           </div>
@@ -128,7 +128,7 @@ const JoinClassForm = ({ onSubmit, onClose, isLoading }) => {
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 text-white focus:ring-gray-500 disabled:opacity-50"
             >
               Cancelar
             </button>
