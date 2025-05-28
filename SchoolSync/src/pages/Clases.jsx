@@ -1,56 +1,86 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+// proyecto/SchoolSync/src/pages/Clases.jsx
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { API_URL } from '../config';
 import Sidebar from './sidebar';
+import ClassImportForm from '../components/ClassImportForm'; // Keep this import as it's a separate file
+import { PlusIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline'; // Import new icons
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
+// --- Componente ClassCard (Defined locally) ---
 const ClassCard = ({ name, teacherName, studentCount, accessCode, userRole }) => (
   <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
     <h3 className="text-xl font-semibold text-gray-800 mb-2">{name}</h3>
-    <p className="text-gray-600 mb-1">Profesor: {teacherName}</p>
-    <p className="text-gray-600 mb-3">Estudiantes: {studentCount}</p>
-    {userRole === 'Profesor' && (
+    <p className="text-gray-600 mb-1">Profesor: {teacherName || 'N/A'}</p>
+    <p className="text-gray-600 mb-3">Estudiantes: {studentCount || 0}</p>
+    {userRole === 'Profesor' && accessCode && (
       <p className="text-sm text-gray-500">Código de acceso: {accessCode}</p>
     )}
   </div>
 );
 
-const CreateClassForm = ({ onSubmit, onClose }) => {
-  const [className, setClassName] = useState('');
+// --- Componente CreateClassForm (Defined locally) ---
+const CreateClassForm = ({ onSubmit, onClose, isLoading }) => {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({ name: className });
-    setClassName('');
-    onClose();
+    if (!name.trim()) {
+      alert('El nombre de la clase es obligatorio.');
+      return;
+    }
+    onSubmit({ name, description });
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg w-96">
-        <h2 className="text-2xl font-bold mb-4">Crear Nueva Clase</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-6 text-gray-800">Crear Nueva Clase</h2>
         <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            value={className}
-            onChange={(e) => setClassName(e.target.value)}
-            placeholder="Nombre de la clase"
-            className="w-full p-2 border rounded mb-4"
-            required
-          />
-          <div className="flex justify-end gap-2">
+          <div className="mb-4">
+            <label htmlFor="className" className="block text-sm font-medium text-gray-700 mb-1">
+              Nombre de la Clase <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="className"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ej: Matemáticas Avanzadas"
+              className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              required
+            />
+          </div>
+          <div className="mb-6">
+            <label htmlFor="classDescription" className="block text-sm font-medium text-gray-700 mb-1">
+              Descripción (Opcional)
+            </label>
+            <textarea
+              id="classDescription"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Ej: Curso enfocado en cálculo integral y álgebra lineal..."
+              rows="3"
+              className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              required
+            />
+          </div>
+          <div className="flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              disabled={isLoading}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+              disabled={isLoading}
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              Crear
+              {isLoading ? 'Creando...' : 'Crear Clase'}
             </button>
           </div>
         </form>
@@ -59,42 +89,55 @@ const CreateClassForm = ({ onSubmit, onClose }) => {
   );
 };
 
-const JoinClassForm = ({ onSubmit, onClose }) => {
+// --- Componente JoinClassForm (Defined locally) ---
+const JoinClassForm = ({ onSubmit, onClose, isLoading }) => {
   const [accessCode, setAccessCode] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(accessCode);
-    setAccessCode('');
-    onClose();
+    // APLICAR .trim() AQUÍ ANTES DE ENVIAR
+    const trimmedAccessCode = accessCode.trim(); // <--- CAMBIO CLAVE
+    if (!trimmedAccessCode) { // Validar después de recortar
+      alert('El código de acceso es obligatorio.');
+      return;
+    }
+    onSubmit(trimmedAccessCode); // <--- USAR EL CÓDIGO RECORTADO
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg w-96">
-        <h2 className="text-2xl font-bold mb-4">Unirse a una Clase</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-6 text-gray-800">Unirse a una Clase</h2>
         <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            value={accessCode}
-            onChange={(e) => setAccessCode(e.target.value)}
-            placeholder="Código de acceso"
-            className="w-full p-2 border rounded mb-4"
-            required
-          />
-          <div className="flex justify-end gap-2">
+          <div className="mb-6">
+            <label htmlFor="accessCode" className="block text-sm font-medium text-gray-700 mb-1">
+              Código de Acceso <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="accessCode"
+              type="text"
+              value={accessCode}
+              onChange={(e) => setAccessCode(e.target.value)}
+              placeholder="Ingresa el código de la clase"
+              className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
+              required
+            />
+          </div>
+          <div className="flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              disabled={isLoading}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600"
+              disabled={isLoading}
+              className="px-4 py-2 text-sm font-medium text-white bg-teal-500 rounded-md hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50"
             >
-              Unirse
+              {isLoading ? 'Uniéndose...' : 'Unirse'}
             </button>
           </div>
         </form>
@@ -103,168 +146,277 @@ const JoinClassForm = ({ onSubmit, onClose }) => {
   );
 };
 
+
+// --- Componente Principal Clases ---
 const Clases = () => {
-  const { user, isAuthenticated, getAccessTokenSilently } = useAuth0();
+  const { user, isAuthenticated, isLoading: authLoading, token } = useAuth();
   const [classes, setClasses] = useState([]);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isJoinModalOpen, setJoinModalOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [showImportClassesModal, setShowImportClassesModal] = useState(false); // New state for import modal
+  const [pageLoading, setPageLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [operationError, setOperationError] = useState(null); // setOperationError is defined here
 
-  const namespace = 'https://schoolsync.example.com/';
-  const userRoles = isAuthenticated && user ? user[`${namespace}roles`] || [] : [];
-  const isTeacher = userRoles.includes('Profesor');
-  const isStudent = userRoles.includes('Alumno');
-  const isParent = userRoles.includes('Padre');
+  const userRoles = isAuthenticated && user ? user.roles || [] : [];
+  const isTeacher = userRoles.includes("Profesor");
+  const isStudent = userRoles.includes("Alumno");
 
-  const fetchClasses = async () => {
+  const fetchClasses = useCallback(async () => {
+    if (!isAuthenticated || !token) {
+      setPageLoading(false);
+      setClasses([]);
+      return;
+    }
+    setPageLoading(true);
+    setOperationError(null);
     try {
-      const token = await getAccessTokenSilently();
       const response = await fetch(`${API_URL}/classes`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Error HTTP: ${response.status} ${response.statusText}` }));
+        throw new Error(errorData.message || `Error HTTP: ${response.status} ${response.statusText}`);
+      }
       const data = await response.json();
-      setClasses(data);
-    } catch (error) {
-      setError(error.message);
+      setClasses(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error fetching classes:", err);
+      setOperationError(err.message);
+      setClasses([]);
     } finally {
-      setLoading(false);
+      setPageLoading(false);
     }
-  };
+  }, [isAuthenticated, token]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchClasses();
+    if (authLoading) {
+        setPageLoading(true);
+        return;
     }
-  }, [isAuthenticated]);
+    fetchClasses();
+  }, [authLoading, fetchClasses]);
 
   const handleCreateClass = async (classData) => {
+    if (!isTeacher) {
+      setOperationError("Solo los profesores pueden crear clases.");
+      return;
+    }
+    setActionLoading(true);
+    setOperationError(null);
     try {
-      const token = await getAccessTokenSilently();
+      if (!token) throw new Error("No autenticado o token no disponible.");
       const response = await fetch(`${API_URL}/classes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(classData)
+        body: JSON.stringify(classData),
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message);
+        const errorData = await response.json().catch(() => ({ message: `Error HTTP: ${response.status} ${response.statusText}` }));
+        throw new Error(errorData.message || `Error HTTP: ${response.status} ${response.statusText}`);
       }
-
+      
+      setCreateModalOpen(false);
       fetchClasses();
-    } catch (error) {
-      setError(error.message);
+    } catch (err) {
+      console.error("Error creating class:", err);
+      setOperationError(err.message);
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleJoinClass = async (accessCode) => {
+  const handleJoinClass = async (accessCode) => { // accessCode ya viene recortado de JoinClassForm
+    setActionLoading(true);
+    setOperationError(null);
     try {
-      const token = await getAccessTokenSilently();
+      if (!token) throw new Error("No autenticado o token no disponible.");
       const response = await fetch(`${API_URL}/classes/join`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ accessCode })
+        body: JSON.stringify({ classCode: accessCode }), // accessCode ya está recortado
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message);
+        const errorData = await response.json().catch(() => ({ message: `Error HTTP: ${response.status} ${response.statusText}` }));
+        throw new Error(errorData.message || `Error HTTP: ${response.status} ${response.statusText}`);
       }
-
+      
+      setJoinModalOpen(false);
       fetchClasses();
-    } catch (error) {
-      setError(error.message);
+    } catch (err) {
+      console.error("Error joining class:", err);
+      setOperationError(err.message);
+    } finally {
+      setActionLoading(false);
     }
   };
+
+  const handleImportClassesSuccess = () => {
+    setShowImportClassesModal(false);
+    fetchClasses(); // Refresh class list after import
+  };
+
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen w-full bg-gray-100">
+        <Sidebar />
+        <div className="flex-1 p-8 text-center">
+          <p>Cargando autenticación...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
       <div className="flex min-h-screen w-full bg-gray-100">
         <Sidebar />
         <div className="flex-1 p-8 text-center">
-          <p>Por favor, inicia sesión para ver tus clases.</p>
+          <p className="text-xl text-gray-700">Por favor, inicia sesión para ver y gestionar tus clases.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-gray-100">
+    <div className="flex min-h-screen w-full bg-gray-100 font-sans">
       <Sidebar />
-      <div className="flex-1 p-8">
-        <header className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Mis Clases</h1>
-          <div className="flex space-x-2">
+      <main className="flex-1 p-8">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-4 sm:mb-0">Mis Clases</h1>
+          <div className="flex space-x-3">
             {isTeacher && (
               <button
-                onClick={() => setCreateModalOpen(true)}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-md shadow-md flex items-center"
+                onClick={() => {
+                  setOperationError(null); // This is defined in the current scope
+                  setCreateModalOpen(true);
+                }}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-md shadow-md transition-colors duration-150 flex items-center"
               >
-                <span className="mr-2">+</span> Crear Clase
+                <PlusIcon className="h-5 w-5 mr-2" />
+                Crear Clase
               </button>
             )}
-            {(isStudent || isParent) && (
+            {isStudent && (
               <button
-                onClick={() => setJoinModalOpen(true)}
-                className="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2 px-4 rounded-md shadow-md flex items-center"
+                onClick={() => {
+                  setOperationError(null); // This is defined in the current scope
+                  setJoinModalOpen(true);
+                }}
+                className="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2 px-4 rounded-md shadow-md transition-colors duration-150 flex items-center"
               >
-                <span className="mr-2">+</span> Unirse a Clase
+                <PlusIcon className="h-5 w-5 mr-2" />
+                Unirse a Clase
+              </button>
+            )}
+            {isTeacher && ( // Only teachers can see the import button
+              <button
+                onClick={() => {
+                  setOperationError(null); // This is defined in the current scope
+                  setShowImportClassesModal(true);
+                }}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md shadow-md transition-colors duration-150 flex items-center"
+              >
+                <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
+                Importar Clases
               </button>
             )}
           </div>
         </header>
 
-        {loading && <p>Cargando clases...</p>}
-        {error && <p className="text-red-500">Error: {error}</p>}
+        {pageLoading && (
+          <div className="text-center py-10">
+            <p className="text-lg text-gray-600">Cargando clases...</p>
+          </div>
+        )}
 
-        {!loading && !error && classes.length > 0 && (
+        {operationError && !actionLoading && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
+            <strong className="font-bold">Error: </strong>
+            <span className="block sm:inline">{operationError}</span>
+          </div>
+        )}
+
+        {!pageLoading && !operationError && classes.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {classes.map((cls) => (
-              <ClassCard
-                key={cls.id}
-                name={cls.name}
-                teacherName={cls.teacher?.name || 'N/A'}
-                studentCount={cls.students?.length || 0}
-                accessCode={cls.accessCode}
-                userRole={isTeacher ? 'Profesor' : isStudent ? 'Alumno' : 'Padre'}
-              />
+              <Link to={`/clases/${cls.id}`} key={cls.id}>
+                <ClassCard
+                  name={cls.name}
+                  teacherName={cls.teacher?.firstName ? `${cls.teacher.firstName} ${cls.teacher.lastName || ''}`.trim() : 'N/A'}
+                  studentCount={cls.studentEnrollments?.length || 0}
+                  accessCode={cls.classCode}
+                  userRole={isTeacher ? 'Profesor' : isStudent ? 'Alumno' : ''}
+                />
+              </Link>
             ))}
           </div>
         )}
 
-        {!loading && !error && classes.length === 0 && (
-          <div className="text-center py-10">
-            <p className="text-gray-600">
-              {isTeacher 
-                ? "Aún no has creado ninguna clase." 
-                : "Aún no te has unido a ninguna clase."}
+        {!pageLoading && !operationError && classes.length === 0 && (
+          <div className="text-center py-16">
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                vectorEffect="non-scaling-stroke"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9.75 21H3.75A1.75 1.75 0 012 19.25V4.75A1.75 1.75 0 013.75 3h10.5A1.75 1.75 0 0116 4.75v5.5M14 14.5l1.04-1.04a1.75 1.75 0 012.478 0l.96.96M19 18v1.25A1.75 1.75 0 0117.25 21h-3.5M19 18h1.25a1.75 1.75 0 001.75-1.75v-1.5a1.75 1.75 0 00-1.75-1.75H19M19 18v-2.25m0 0a1.75 1.75 0 00-1.75-1.75h-1.5A1.75 1.75 0 0014 15.75v1.5c0 .414.168.789.439 1.061"
+              />
+            </svg>
+            <h3 className="mt-2 text-lg font-medium text-gray-900">
+              {isTeacher ? "Aún no has creado ninguna clase" : "Aún no estás en ninguna clase"}
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              {isTeacher ? "Comienza creando tu primera clase para organizar tus cursos y alumnos." : "Únete a una clase usando un código de acceso o espera a que te asignen."}
             </p>
           </div>
         )}
 
         {isCreateModalOpen && (
-          <CreateClassForm 
+          <CreateClassForm
             onSubmit={handleCreateClass}
-            onClose={() => setCreateModalOpen(false)}
+            onClose={() => {
+              setCreateModalOpen(false);
+              setOperationError(null);
+            }}
+            isLoading={actionLoading}
           />
         )}
 
         {isJoinModalOpen && (
           <JoinClassForm
             onSubmit={handleJoinClass}
-            onClose={() => setJoinModalOpen(false)}
+            onClose={() => {
+              setJoinModalOpen(false);
+              setOperationError(null);
+            }}
+            isLoading={actionLoading}
           />
         )}
-      </div>
+        {showImportClassesModal && (
+          <ClassImportForm
+            onClose={() => setShowImportClassesModal(false)}
+            onImportSuccess={handleImportClassesSuccess}
+          />
+        )}
+      </main>
     </div>
   );
 };

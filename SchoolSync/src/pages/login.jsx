@@ -1,125 +1,106 @@
 // src/pages/login.jsx
-import React, { useEffect } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Login = () => {
-  const { loginWithRedirect, isAuthenticated, isLoading, error, user } = useAuth0();
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // Aunque el AuthContext maneja la navegación post-login
+  const { login, isLoading: authIsLoading, error: authError, setError, isAuthenticated } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [pageError, setPageError] = useState(''); // Para errores específicos de esta página
 
+  // Si ya está autenticado, no debería estar en la página de login
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      // Una vez autenticado, puedes verificar si el rol ya está en el token o perfil del usuario
-      // y redirigir en consecuencia o realizar acciones post-registro.
-      console.log('Usuario autenticado:', user);
-      navigate('/inicio'); // Redirige a la página de inicio
+    if (isAuthenticated) {
+      navigate('/inicio', { replace: true });
     }
-  }, [isLoading, isAuthenticated, navigate, user]);
+  }, [isAuthenticated, navigate]);
 
-  const handleLogin = () => {
-    loginWithRedirect({
-      appState: { targetUrl: '/inicio' }, // Opcional: para redirigir después del login
-      // screen_hint: 'login', // Sugiere a Auth0 mostrar la pantalla de login
-    });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setPageError(''); // Limpiar errores locales
+    if (setError) setError(null); // Limpiar errores globales del AuthContext
+
+    const result = await login(email, password);
+    if (!result.success) {
+      setPageError(result.error || 'Error desconocido al iniciar sesión.');
+    }
+    // La navegación en caso de éxito ya la maneja el AuthContext.login
   };
 
-  const handleRegister = (role) => {
-    loginWithRedirect({
-      appState: { targetUrl: '/inicio', role: role }, // Pasamos el rol en appState
-      screen_hint: 'signup', // Sugiere a Auth0 mostrar la pantalla de registro
-      // También puedes pasar el rol directamente en authorizationParams,
-      // que podría ser leído por una Regla en el objeto `context.request.query`
-      // o `context.request.body` dependiendo de cómo Auth0 lo maneje.
-      // Es más robusto usar appState para información que tu app necesita post-login.
-      // Si quieres que la Regla lo use *durante* la transacción de login/signup,
-      // necesitarás explorar cómo enviar metadata o un custom parameter.
-      // Una forma es usar `customState` en las opciones de `loginWithRedirect`
-      // que luego Auth0 puede pasar a las reglas en `context.protocol === 'redirect-callback'`
-      // bajo `context.request.query.state` (después de decodificar el state).
-      // Auth0 usa `appState` para pasar estado a la aplicación después de la redirección.
-      // Para pasar datos *a* la regla durante el signup, una mejor forma es usar un
-      // Hook "Pre User Registration" si tienes un flujo de registro más personalizado,
-      // o configurar tu formulario de Auth0 (si usas el Universal Login personalizable)
-      // para incluir un campo de selección de rol que se guarde en `user_metadata`.
-
-      // Para este ejemplo, nos enfocaremos en `appState` y luego, en la Regla,
-      // si es el primer login, consultaremos este `appState` o, idealmente,
-      // tu aplicación, después del login, haría una llamada a tu backend
-      // para finalizar el registro con el rol (si la Regla no pudo hacerlo).
-      // ---
-      // Estrategia Simplificada para la Regla:
-      // Pasaremos el rol en un parámetro de pantalla (screen_hint) o un custom param
-      // que la Regla pueda recoger. El `initialScreen` y `mode` son ejemplos.
-      // Auth0 tiene `customParameters` como opción para Universal Login.
-      // Pero la forma más confiable de pasar datos a la regla es que la regla los infiera
-      // o que tu UI de registro personalizada (si la tienes) los envíe a user_metadata.
-
-      // Alternativa más directa para Reglas (si Auth0 lo permite en el Universal Login):
-      // Algunos parámetros se pueden añadir al query string de la autorización
-      // y la regla puede leer `context.request.query.nombre_parametro_rol`.
-      authorizationParams: {
-        screen_hint: 'signup',
-
-      },
-      appState: { targetUrl: '/inicio', role: role } // El rol se usará post-login en tu app
-    });
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div>Cargando sesión...</div>
-      </div>
-    );
-  }
+  // Limpiar errores si el usuario empieza a escribir de nuevo
+  useEffect(() => {
+    if (email || password) {
+      setPageError('');
+      if (setError) setError(null);
+    }
+  }, [email, password, setError]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md text-center">
-        <div>
-          <h2 className="text-3xl font-extrabold text-gray-900">
-            Bienvenido a SchoolSync
-          </h2>
-          <p className="mt-2 text-gray-600">
-            Selecciona una opción para continuar.
-          </p>
-        </div>
+      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-xl">
+        <h2 className="text-3xl font-extrabold text-center text-gray-900">
+          Iniciar Sesión
+        </h2>
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <div>
+            <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 mb-1">
+              Correo electrónico
+            </label>
+            <input
+              id="email-address"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="tu@correo.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              Contraseña
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
 
-        <div className="space-y-4">
-          <button
-            onClick={handleLogin}
-            className="w-full px-4 py-2 font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Iniciar Sesión
-          </button>
+          {/* Muestra errores de esta página o del contexto de autenticación */}
+          {(pageError || authError) && (
+            <p className="text-sm text-red-600 text-center">
+              {pageError || authError}
+            </p>
+          )}
 
-          <p className="text-sm text-gray-500">¿Eres nuevo? Regístrate como:</p>
-
-          <button
-            onClick={() => handleRegister('alumno')}
-            className="w-full px-4 py-2 font-medium text-indigo-700 bg-indigo-100 border border-indigo-300 rounded-md shadow-sm hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400"
-          >
-            Registrarse como Alumno
-          </button>
-          <button
-            onClick={() => handleRegister('maestro')}
-            className="w-full px-4 py-2 font-medium text-teal-700 bg-teal-100 border border-teal-300 rounded-md shadow-sm hover:bg-teal-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-400"
-          >
-            Registrarse como Maestro
-          </button>
-          <button
-            onClick={() => handleRegister('padre')}
-            className="w-full px-4 py-2 font-medium text-purple-700 bg-purple-100 border border-purple-300 rounded-md shadow-sm hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-400"
-          >
-            Registrarse como Padre de Familia
-          </button>
-        </div>
-
-        {error && (
-          <p className="mt-4 text-sm text-red-600">
-            Error de autenticación: {error.message}. Revisa la consola para más detalles.
-          </p>
-        )}
+          <div>
+            <button
+              type="submit"
+              disabled={authIsLoading}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            >
+              {authIsLoading ? 'Iniciando...' : 'Iniciar Sesión'}
+            </button>
+          </div>
+        </form>
+        <p className="mt-4 text-sm text-center text-gray-600">
+          ¿No tienes una cuenta?{' '}
+          <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+            Regístrate aquí
+          </Link>
+        </p>
       </div>
     </div>
   );

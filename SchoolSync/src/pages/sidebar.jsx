@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   HomeIcon,
-  ChatBubbleLeftRightIcon,
+  ChatBubbleLeftRightIcon, // Importa el ícono para Chat
   CalendarIcon,
   EnvelopeIcon,
   DocumentDuplicateIcon,
@@ -9,28 +9,22 @@ import {
   BookOpenIcon,
 } from '@heroicons/react/24/outline';
 import { UserCircleIcon } from '@heroicons/react/24/solid';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '../context/AuthContext'; // Cambiado de useAuth0
 import { Link, useLocation } from 'react-router-dom';
 
 const Sidebar = () => {
-  const { logout, isAuthenticated, user } = useAuth0();
+  const { logout, isAuthenticated, user } = useAuth(); // Cambiado de useAuth0
   const location = useLocation();
 
   const handleLogout = () => {
-    logout({
-      logoutParams: {
-        returnTo: window.location.origin,
-      },
-    });
+    logout(); // Llama al logout de tu AuthContext
   };
 
   const navItems = [
     { name: 'Inicio', href: '/inicio', icon: HomeIcon },
     { name: 'Clases', href: '/clases', icon: BookOpenIcon },
-    { name: 'Chat', href: '/chat', icon: ChatBubbleLeftRightIcon },
-    { name: 'Calendario', href: '/calendario', icon: CalendarIcon },
-    { name: 'Mensajes', href: '/mensajes', icon: EnvelopeIcon },
-    { name: 'Documentos', href: '/documentos', icon: DocumentDuplicateIcon },
+    { name: 'Chat', href: '/ChatPage', icon: ChatBubbleLeftRightIcon }, // Ítem de Chat añadido
+
   ];
 
   return (
@@ -62,15 +56,20 @@ const Sidebar = () => {
             <ArrowLeftOnRectangleIcon className="h-6 w-6" />
           </button>
         )}
-        {isAuthenticated && user?.picture && (
-          <img
-            src={user.picture}
-            alt="Perfil"
-            className="w-10 h-10 rounded-full object-cover"
-          />
-        )}
-        {isAuthenticated && !user?.picture && (
-          <UserCircleIcon className="h-10 w-10 text-gray-400" />
+        
+        {/* Enlace a la página de perfil en la imagen */}
+        {isAuthenticated && (
+          <Link to="/perfil" title="Ver Perfil">
+            {user?.pictureUrl ? (
+              <img
+                src={user.pictureUrl}
+                alt="Perfil"
+                className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+              />
+            ) : (
+              <UserCircleIcon className="h-10 w-10 text-gray-400 cursor-pointer hover:text-gray-300 transition-colors" />
+            )}
+          </Link>
         )}
       </div>
     </aside>

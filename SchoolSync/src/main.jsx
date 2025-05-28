@@ -1,27 +1,20 @@
-import { StrictMode } from 'react';
+// src/main.jsx
+import React, { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import './index.css';
-import App from './App.jsx';                   
-import { Auth0Provider } from '@auth0/auth0-react'; 
+import './index.css'; // Asegúrate que Tailwind CSS se importe aquí o en App.jsx
+import App from './App.jsx';
+import { AuthProvider } from './context/AuthContext'; // Importa tu AuthProvider
 
-const auth0Domain = 'thebigmou.us.auth0.com';
-const auth0ClientId = 'HzboByDK0egBiGaIhwzfTz3GWOEZeVdO';
-const auth0Audience = 'https://thebigmou.us.auth0.com/api/v2/';
+const rootElement = document.getElementById('root');
+const root = createRoot(rootElement);
 
-createRoot(document.getElementById('root')).render(
+root.render(
   <StrictMode>
-    <BrowserRouter> 
-      <Auth0Provider
-        domain={auth0Domain}
-        clientId={auth0ClientId}
-        authorizationParams={{
-          redirect_uri: window.location.origin,
-          audience: auth0Audience,
-        }}
-      >
-        <App /> 
-      </Auth0Provider>
-    </BrowserRouter> 
+    <BrowserRouter>
+      <AuthProvider> 
+        <App />
+      </AuthProvider>
+    </BrowserRouter>
   </StrictMode>,
 );

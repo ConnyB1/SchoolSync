@@ -1,23 +1,26 @@
-
 services:
   backend:
     container_name: school-sync-backend
     build:
       context: ./school-sync-backend
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     environment:
-      DB_HOST: db          # <-- CORREGIDO
+      DB_HOST: db
       DB_PORT: 5432
-      DB_USERNAME: postgres
-      DB_PASSWORD: 321
-      DB_DATABASE: schoolsyn-database   
-      NODE_ENV: development
-      AUTH0_ISSUER_URL: https://thebigmou.us.auth0.com/ 
-      AUTH0_AUDIENCE: https://thebigmou.us.auth0.com/api/v2/
+      DB_USERNAME: postgres # Este es el usuario que tu backend usará
+      DB_PASSWORD: 321      # Esta es la contraseña que tu backend usará
+      DB_NAME: schoolsyn-database 
+      NODE_ENV: production # Considera cambiar a 'development' para desarrollo si es necesario
+      PORT: 3000
+      JWT_SECRET: a9371c91e647f736c15abd56326c8fd97b9a7699eb20e488cc9b7c2337f9d6bb13959d75f3ae1c60812f2b5d0eca0874c5decab69b6f73e3ea41d5ce20c340cbb0fd00f2106638bad8b0ad4af6c71928aa887d2536877c57c22028f27d874c2d7148376d929679e284159f123a714b7fca649c3ef409f33360225221c4a02ff1 # Considera mover secrets a un archivo .env y no versionarlos
+      SENDGRID_API_KEY: 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 # Considera mover secrets a un archivo .env
+      SENDGRID_VERIFIED_SENDER: schoolsync.real@gmail.com
     volumes:
-      - ./school-sync-backend:/usr/src/app
-      - /usr/src/app/node_modules
+      - ./school-sync-backend:/app
+      - /app/node_modules 
+      - /app/dist
     depends_on:
       db:
         condition: service_healthy
@@ -35,22 +38,22 @@ services:
       - schoolsync-net
     depends_on: 
       - backend
+    environment:
+      - VITE_BACKEND_URL=http://localhost:3000
 
   db:
     image: postgres:15-alpine
     container_name: school_sync_db
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 321              
-      POSTGRES_DB: schoolsyn-database   
-    ports:
-      - "5433:5432" 
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      POSTGRES_USER: postgres         # <--- AÑADIDO (coincide con DB_USERNAME del backend)
+      POSTGRES_PASSWORD: 321          # <--- AÑADIDO (coincide con DB_PASSWORD del backend)
+      POSTGRES_DB: schoolsyn-database # <--- AÑADIDO (coincide con DB_NAME del backend)
     networks:
       - schoolsync-net
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # <--- AÑADIDO para persistir datos
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d schoolsyn-database"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d schoolsyn-database"] # Ahora 'postgres' es el usuario correcto aquí
       interval: 5s
       timeout: 5s
       retries: 5
@@ -60,4 +63,4 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
+  postgres_data: # Definición del volumen nombrado
