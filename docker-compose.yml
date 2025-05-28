@@ -7,13 +7,11 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DB_TYPE: postgres
-      DB_HOST: aws-0-us-east-1.pooler.supabase.com
-      DB_PORT: 6543
-      DB_USERNAME: postgres.jecdwjexkjzzzsjlalnl
-      DB_PASSWORD: PhlS9vgcxo7sj1Ej
-      DB_NAME: postgres
-      DB_SSL: true
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USERNAME: postgres # Este es el usuario que tu backend usará
+      DB_PASSWORD: 321      # Esta es la contraseña que tu backend usará
+      DB_NAME: schoolsyn-database 
       NODE_ENV: production # Considera cambiar a 'development' para desarrollo si es necesario
       JWT_SECRET: a9371c91e647f736c15abd56326c8fd97b9a7699eb20e488cc9b7c2337f9d6bb13959d75f3ae1c60812f2b5d0eca0874c5decab69b6f73e3ea41d5ce20c340cbb0fd00f2106638bad8b0ad4af6c71928aa887d2536877c57c22028f27d874c2d7148376d929679e284159f123a714b7fca649c3ef409f33360225221c4a02ff1 # Considera mover secrets a un archivo .env y no versionarlos
       SENDGRID_API_KEY: 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 # <--- ¡PEGA LA CLAVE CORRECTA Y ACTIVA AQUÍ!
